@@ -83,7 +83,8 @@
       }
 
       // 📥 Google Sheets CSV data loading and filtering
-      const sheetUrl = "YOUR_PUBLISHED_CSV_URL_HERE";
+      const sheetUrl =
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vRg-2x7kuCTiX79zX9xdpvKar5zEVwkFnhiQ77-iMn-NYtste1sZ1BuZyN3_qj4VxpbICTy5kppD2Zb/pub?output=csv";
 
       async function loadData() {
         const res = await fetch(sheetUrl);
