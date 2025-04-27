@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Admin User Filter</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+        background: #f9f9f9;
+      }
+      .login,
+      .app {
+        max-width: 600px;
+        margin: auto;
+      }
+      input {
+        margin: 8px 0;
+        padding: 8px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 20px;
+        background: white;
+      }
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 8px;
+      }
+      .hidden {
+        display: none;
+      }
+      .card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      }
+      h2 {
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login card" id="loginSection">
+      <h2>Admin Login</h2>
+      <input type="text" id="username" placeholder="Username" />
+      <input type="password" id="password" placeholder="Password" />
+      <button onclick="login()">Login</button>
+      <p id="loginError" style="color: red"></p>
+    </div>
+
+    <div class="app hidden" id="appSection">
+      <div class="card">
+        <h2>User Filter</h2>
+        <input type="text" id="nameFilter" placeholder="Search by name" />
+        <input type="text" id="icFilter" placeholder="Search by IC" />
+        <input type="text" id="phoneFilter" placeholder="Search by phone" />
+        <table id="userTable"></table>
+      </div>
+    </div>
+
+    <script>
+      // 🛡️ Simple login check
+      const credentials = { username: "admin", password: "1234" };
+
+      function login() {
+        const user = document.getElementById("username").value;
+        const pass = document.getElementById("password").value;
+
+        if (user === credentials.username && pass === credentials.password) {
+          document.getElementById("loginSection").classList.add("hidden");
+          document.getElementById("appSection").classList.remove("hidden");
+          loadData(); // Load table after login
+        } else {
+          document.getElementById("loginError").innerText =
+            "Invalid credentials!";
+        }
+      }
+
+      // 📥 Google Sheets CSV data loading and filtering
+      const sheetUrl = "YOUR_PUBLISHED_CSV_URL_HERE";
+
+      async function loadData() {
+        const res = await fetch(sheetUrl);
+        const text = await res.text();
+        const rows = text
+          .trim()
+          .split("\n")
+          .map((row) => row.split(","));
+        const headers = rows[0];
+        const data = rows.slice(1);
+
+        const table = document.getElementById("userTable");
+        const renderTable = (filteredData) => {
+          table.innerHTML =
+            "<tr>" +
+            headers.map((h) => `<th>${h}</th>`).join("") +
+            "</tr>" +
+            filteredData
+              .map(
+                (row) =>
+                  "<tr>" +
+                  row.map((cell) => `<td>${cell}</td>`).join("") +
+                  "</tr>"
+              )
+              .join("");
+        };
+
+        const filterTable = () => {
+          const nameVal = document
+            .getElementById("nameFilter")
+            .value.toLowerCase();
+          const icVal = document.getElementById("icFilter").value.toLowerCase();
+          const phoneVal = document
+            .getElementById("phoneFilter")
+            .value.toLowerCase();
+
+          const filtered = data.filter(
+            (row) =>
+              row[0].toLowerCase().includes(nameVal) &&
+              row[1].toLowerCase().includes(icVal) &&
+              row[2].toLowerCase().includes(phoneVal)
+          );
+
+          renderTable(filtered);
+        };
+
+        // Attach events
+        document
+          .getElementById("nameFilter")
+          .addEventListener("input", filterTable);
+        document
+          .getElementById("icFilter")
+          .addEventListener("input", filterTable);
+        document
+          .getElementById("phoneFilter")
+          .addEventListener("input", filterTable);
+
+        renderTable(data); // Initial render
+      }
+    </script>
+  </body>
+</html>
