@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>Admin User Filter</title>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <style>
       body {
         font-family: sans-serif;
@@ -11,7 +12,7 @@
       }
       .login,
       .app {
-        max-width: 600px;
+        max-width: 800px;
         margin: auto;
       }
       input {
@@ -30,6 +31,7 @@
       td {
         border: 1px solid #ccc;
         padding: 8px;
+        text-align: left;
       }
       .hidden {
         display: none;
@@ -57,15 +59,23 @@
     <div class="app hidden" id="appSection">
       <div class="card">
         <h2>User Filter</h2>
-        <input type="text" id="nameFilter" placeholder="Search by name" />
-        <input type="text" id="icFilter" placeholder="Search by IC" />
-        <input type="text" id="phoneFilter" placeholder="Search by phone" />
+        <input type="text" id="nameFilter" placeholder="Search by Nama Penuh" />
+        <input
+          type="text"
+          id="icFilter"
+          placeholder="Search by No Kad Pengenalan"
+        />
+        <input
+          type="text"
+          id="phoneFilter"
+          placeholder="Search by Nombor Telefon"
+        />
         <table id="userTable"></table>
       </div>
     </div>
 
     <script>
-      // 🛡️ Simple login check
+      // 🛡️ Simple login
       const credentials = { username: "admin", password: "1234" };
 
       function login() {
@@ -75,28 +85,41 @@
         if (user === credentials.username && pass === credentials.password) {
           document.getElementById("loginSection").classList.add("hidden");
           document.getElementById("appSection").classList.remove("hidden");
-          loadData(); // Load table after login
+          loadData();
         } else {
           document.getElementById("loginError").innerText =
             "Invalid credentials!";
         }
       }
 
-      // 📥 Google Sheets CSV data loading and filtering
-      const sheetUrl =
-        "https://docs.google.com/spreadsheets/d/e/2PACX-1vRg-2x7kuCTiX79zX9xdpvKar5zEVwkFnhiQ77-iMn-NYtste1sZ1BuZyN3_qj4VxpbICTy5kppD2Zb/pub?output=csv";
+      // 🔗 Replace these with your actual published CSV URLs:
+      const sheetUrls = [
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vTTFEmSSDBq_--NJp-5GpGAvR1pgOLjhmHQFMzFM_zfuEKCZufVZ2I-PM_kXKHnbVdiHyYKAOVMcWBx/pub?output=csv",
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vSgINbnYQH7RMPzPPQ1fjsf8hmSDPBlUlMkkBVMCSFfhHcdO9iJYmBe43L88gEfikZgJ3kJgUaD_KG4/pub?output=csv",
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vRg-2x7kuCTiX79zX9xdpvKar5zEVwkFnhiQ77-iMn-NYtste1sZ1BuZyN3_qj4VxpbICTy5kppD2Zb/pub?output=csv",
+      ];
 
       async function loadData() {
-        const res = await fetch(sheetUrl);
-        const text = await res.text();
-        const rows = text
-          .trim()
-          .split("\n")
-          .map((row) => row.split(","));
-        const headers = rows[0];
-        const data = rows.slice(1);
+        const allData = [];
 
+        for (const url of sheetUrls) {
+          try {
+            const res = await fetch(url);
+            const text = await res.text();
+            const parsed = Papa.parse(text, {
+              header: true,
+              skipEmptyLines: true,
+            });
+            allData.push(...parsed.data);
+          } catch (e) {
+            console.error("Failed to load CSV from:", url, e);
+          }
+        }
+
+        const data = allData;
+        const headers = Object.keys(data[0]);
         const table = document.getElementById("userTable");
+
         const renderTable = (filteredData) => {
           table.innerHTML =
             "<tr>" +
@@ -106,7 +129,7 @@
               .map(
                 (row) =>
                   "<tr>" +
-                  row.map((cell) => `<td>${cell}</td>`).join("") +
+                  headers.map((h) => `<td>${row[h] || ""}</td>`).join("") +
                   "</tr>"
               )
               .join("");
@@ -123,15 +146,14 @@
 
           const filtered = data.filter(
             (row) =>
-              row[0].toLowerCase().includes(nameVal) &&
-              row[1].toLowerCase().includes(icVal) &&
-              row[2].toLowerCase().includes(phoneVal)
+              (row["NAMA PENUH"] || "").toLowerCase().includes(nameVal) &&
+              (row["NO KAD PENGENALAN"] || "").toLowerCase().includes(icVal) &&
+              (row["NOMBOR TELEFON"] || "").toLowerCase().includes(phoneVal)
           );
 
           renderTable(filtered);
         };
 
-        // Attach events
         document
           .getElementById("nameFilter")
           .addEventListener("input", filterTable);
@@ -142,7 +164,7 @@
           .getElementById("phoneFilter")
           .addEventListener("input", filterTable);
 
-        renderTable(data); // Initial render
+        renderTable(data);
       }
     </script>
   </body>
